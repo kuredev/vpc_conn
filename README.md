@@ -19,8 +19,6 @@ This tool currently has the following restrictions.
 - Can only make a call from one side
 - No encryption between tunnels
 - Can only be processed by a single thread
-- One is used as a router for tunnels and one is used as a host for sending and receiving.
-
 
 --
 
@@ -29,7 +27,7 @@ HowToUse
 - Prepare two VPCs with the same CIDR
 - Prepare a total of 4 EC2 instances.
   - Place two EC2 instances in one VPC
-  - One is used as a router for tunnels and one is used as a host for sending and receiving.
+    - One is used as a router for tunnels and one is used as a host for sending and receiving.
   - Set up three ENIs for your EC2 instance for your router.
     - For management
     - For tunnel
