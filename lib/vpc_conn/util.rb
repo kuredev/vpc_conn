@@ -1,4 +1,4 @@
-module RbEtherIP
+module VpcConn
   module Util
     private
 

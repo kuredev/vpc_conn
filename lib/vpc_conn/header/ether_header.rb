@@ -1,6 +1,6 @@
 require "socket"
 
-module RbEtherIP
+module VpcConn
   class EtherHeader
     ETH_TYPE_NUMBER_ARP = 0x0800
 

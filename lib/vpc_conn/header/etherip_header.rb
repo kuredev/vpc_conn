@@ -1,4 +1,4 @@
-module RbEtherIP
+module VpcConn
   class EtherIPHeader
     def initialize
       @version = 3 # 4bit, 必ず3

@@ -1,5 +1,5 @@
 require "optparse"
-require "./lib/rb_etherip"
+require "./lib/vpc_conn"
 
 # Usage
 # ruby rb_etherip.rb -o eth1 -t eth0 -d 20.0.0.2 -s 20.0.0.1
@@ -23,7 +23,7 @@ end
 # pp options[:remote_ip_addrs]
 # exit
 
-tunnel = RbEtherIP::Tunnel.new(
+tunnel = VpcConn::Tunnel.new(
   outside_interface: options[:outside_interface],
   tunnel_interface: options[:tunnel_interface],
   dst_addr: options[:dst_addr],

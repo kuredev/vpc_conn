@@ -6,7 +6,7 @@
 #   uint8_t arp_tha[ETH_ALEN]; 6Byte
 #   uint8_t arp_tpa[4]; 4Byte
 # };
-module RbEtherIP
+module VpcConn
   class EtherArp
     # @param [String] dst_ip_addr "192.,168.1.1"
     def initialize(src_if_name, dst_ip_addr)
@@ -15,7 +15,7 @@ module RbEtherIP
     end
 
     def to_pack
-      ea_hdr = RbEtherIP::Arphdr.new.to_pack
+      ea_hdr = VpcConn::Arphdr.new.to_pack
       arp_sha = if_name_to_mac_adress(@src_if_name)
       arp_spa = if_name_to_ip_address(@src_if_name).split(".").map do |n|
         [n.to_i].pack("C")

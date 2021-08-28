@@ -1,4 +1,4 @@
-module RbEtherIP
+module VpcConn
   # IPHeader + EtherHeader + Payload(Caplused Data)
   class IPPacket
 

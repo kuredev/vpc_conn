@@ -1,4 +1,4 @@
-module RbEtherIP
+module VpcConn
   class ICMPHeader
     attr_accessor :id, :seq_number, :data, :type
 

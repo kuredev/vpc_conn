@@ -1,6 +1,6 @@
 require "socket"
 
-module RbEtherIP
+module VpcConn
   ARPHRD_ETHER = 1
   ARPOP_REQUEST = 1
   ETH_ALEN = 6
@@ -12,7 +12,7 @@ module RbEtherIP
   TIMEOUT_TIME = 3
 
   class ArpClient
-    include RbEtherIP::Util
+    include VpcConn::Util
 
     # @param [String] src_if_name "eth0"
     # @param [String] dst_ip_addr "192.168.0.1"
@@ -22,17 +22,17 @@ module RbEtherIP
     end
 
     def data_to_send
-      ether_header = RbEtherIP::EtherHeader.new(@src_if_name).to_pack
-      ether_arp = RbEtherIP::EtherArp.new(@src_if_name, @dst_ip_addr).to_pack
+      ether_header = VpcConn::EtherHeader.new(@src_if_name).to_pack
+      ether_arp = VpcConn::EtherArp.new(@src_if_name, @dst_ip_addr).to_pack
       ether_header + ether_arp
     end
 
     # @return [Integer] Return value of BasicSocket#send
     def send
       bind_if(socket)
-      ether_header = RbEtherIP::EtherHeader.new(@src_if_name).to_pack
+      ether_header = VpcConn::EtherHeader.new(@src_if_name).to_pack
 
-      ether_arp = RbEtherIP::EtherArp.new(@src_if_name, @dst_ip_addr).to_pack
+      ether_arp = VpcConn::EtherArp.new(@src_if_name, @dst_ip_addr).to_pack
       data = ether_header + ether_arp
 
       socket.send(data, 0)
@@ -45,21 +45,21 @@ module RbEtherIP
       send
 
       mesg, _ = socket.recvfrom(1500)
-      target_mac_addresss = RbEtherIP::EtherFrame.new(mesg).sender_mac_address
+      target_mac_addresss = VpcConn::EtherFrame.new(mesg).sender_mac_address
       target_mac_addresss
     end
 
     # @return [Integer] Return value of BasicSocket#send
     def send_by_sock_dgram
       bind_if(socket_dgram)
-      ether_arp = RbEtherIP::EtherArp.new(@src_if_name, @dst_ip_addr).to_pack
-      socket.send(ether_arp, 0, RbEtherIP::SockAddressLLArp.new(@src_if_name).to_pack_to)
+      ether_arp = VpcConn::EtherArp.new(@src_if_name, @dst_ip_addr).to_pack
+      socket.send(ether_arp, 0, VpcConn::SockAddressLLArp.new(@src_if_name).to_pack_to)
     end
 
     private
 
     def bind_if(socket)
-      sll = RbEtherIP::SockAddressLLArp.new(@src_if_name).to_pack_from
+      sll = VpcConn::SockAddressLLArp.new(@src_if_name).to_pack_from
       socket.bind(sll)
     end
 

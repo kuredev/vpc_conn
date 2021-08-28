@@ -7,9 +7,9 @@
 #   unsigned char  sll_halen;
 #   unsigned char  sll_addr[8];
 # };
-module RbEtherIP
+module VpcConn
   class SockAddressLLArp
-    include RbEtherIP::Util
+    include VpcConn::Util
 
     # @param [String] if_name "eth0"
     def initialize(if_name)

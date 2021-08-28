@@ -1,7 +1,7 @@
 require "socket"
 require_relative "./header/etherip_header"
 
-module RbEtherIP
+module VpcConn
   class Tunnel
     include Util
     # constructor
@@ -92,7 +92,7 @@ module RbEtherIP
 
     # @return [Array<String(Binary)>]
     def resolve_arp_via_tunnel(tunnel_sock, dst_ip_addr)
-      arp_client = RbEtherIP::ArpClient.new(src_if_name: "eth2", dst_ip_addr: dst_ip_addr.to_s)
+      arp_client = VpcConn::ArpClient.new(src_if_name: "eth2", dst_ip_addr: dst_ip_addr.to_s)
       arp_data = arp_client.data_to_send
       tunnel_sock.bind(Socket.sockaddr_in(nil, @src_addr))
       tunnel_sock.send(EtherIPHeader.new.to_pack + arp_data, 0, Socket.sockaddr_in(nil, @peer_addr))

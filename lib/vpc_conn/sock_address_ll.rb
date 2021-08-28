@@ -1,4 +1,4 @@
-module RbEtherIP
+module VpcConn
   class SockAddressLL
     # @param [String] if_name "eth0"
     def initialize(if_name)

@@ -4,9 +4,9 @@
 #   u_int8_t  ether_shost[ETH_ALEN]; 6Byte
 #   u_int16_t ether_type; 2Byte
 # }
-module RbEtherIP
+module VpcConn
   class EtherHeader
-    include RbEtherIP::Util
+    include VpcConn::Util
 
     def initialize(if_name)
       @if_name = if_name

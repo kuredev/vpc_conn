@@ -1,4 +1,4 @@
-module RbEtherIP
+module VpcConn
   # struct arphdr
   #   { 8Byte
   #     unsigned short int ar_hrd; 2Byte

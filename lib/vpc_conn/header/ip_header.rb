@@ -1,6 +1,6 @@
 require "ipaddr"
 
-module RbEtherIP
+module VpcConn
   class IPHeader
     def initialize(version: nil, header_length: nil, tos: nil, total_length: nil,
                    id: nil, flags: nil, fragment: nil, time_to_live: nil, protocol: nil,

@@ -1,4 +1,4 @@
-module RbEtherIP
+module VpcConn
   class ArpTable
     def initialize
       @arp_entries = []
