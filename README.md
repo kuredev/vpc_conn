@@ -1,4 +1,5 @@
-VpcConn is a tool that communicates Amazon VPC hosts in the same address band.
+VpcConn is a tool that enables communication between two VPC hosts with overlapping addresses.
+
 This tool is experimental.
 
 --
