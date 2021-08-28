@@ -21,10 +21,6 @@ module RbEtherIP
       @dst_ip_addr = dst_ip_addr
     end
 
-    def get_arp_table
-      # ★
-    end
-
     def data_to_send
       ether_header = RbEtherIP::EtherHeader.new(@src_if_name).to_pack
       ether_arp = RbEtherIP::EtherArp.new(@src_if_name, @dst_ip_addr).to_pack
@@ -36,24 +32,20 @@ module RbEtherIP
       bind_if(socket)
       ether_header = RbEtherIP::EtherHeader.new(@src_if_name).to_pack
 
-      # pp ether_header # -> eth0のやつ
-
       ether_arp = RbEtherIP::EtherArp.new(@src_if_name, @dst_ip_addr).to_pack
       data = ether_header + ether_arp
 
       socket.send(data, 0)
-      # socket.send(data, 0, RbEtherIP::SockAddressLLArp.new(@src_if_name).to_pack_to)
     end
 
-    # ★これを手本に.
     # Use Raw Socket
     #
     # @return [Array<String>] Array of Mac Address
     def send_and_receive
       send
 
-      mesg, _ = socket.recvfrom(1500) # 第3引数がある→ARPしか受信しない？、ない→全部受信する？
-      target_mac_addresss = RbEtherIP::RecvMessage.new(mesg).sender_mac_address
+      mesg, _ = socket.recvfrom(1500)
+      target_mac_addresss = RbEtherIP::EtherFrame.new(mesg).sender_mac_address
       target_mac_addresss
     end
 
@@ -80,7 +72,6 @@ module RbEtherIP
       )
     end
 
-    # EtherHeaderから触る
     def socket
       @socket ||= Socket.open(
         Socket::AF_PACKET,

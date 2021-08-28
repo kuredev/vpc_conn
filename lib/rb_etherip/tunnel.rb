@@ -3,28 +3,17 @@ require_relative "./header/etherip_header"
 
 module RbEtherIP
   class Tunnel
+    include Util
     # constructor
     #
     # @param outside_interface [String]
     # @param tunnel_interface [String]
-    def initialize(outside_interface: , tunnel_interface: , dst_addr:, src_addr:)
+    def initialize(outside_interface: , tunnel_interface: , dst_addr:, src_addr:, remote_ip_addrs: nil)
       @outside_interface = outside_interface
       @tunnel_interface = tunnel_interface
       @peer_addr = dst_addr
       @src_addr = src_addr
-    end
-
-    # 以下のヘッダの宛先MACアドレスを置き換える
-    # @param [String] payload Ether + IP + ICMP
-    # @return [String]
-    def replace_dst_mac_addr(payload, dst_mac_addr)
-      # d = payload.slice(0, 6).bytes.map { |byte| byte.to_s(16) }
-      # s = payload.slice(6, 6).bytes.map { |byte| byte.to_s(16) }
-      # pp d
-      # pp s
-      # pp dst_mac_addr
-      payload[0, 6] = dst_mac_addr.join
-      payload
+      @remote_ip_addrs = remote_ip_addrs
     end
 
     # Run as a bridge until Ctrl + C.
@@ -41,52 +30,59 @@ module RbEtherIP
                   )
 
       bind_if(outside_sock, @outside_interface)
-      # bind_if(tunnel_sock, @tunnel_interface)
-
       promiscuous(outside_sock, @outside_interface)
-      # promiscuous(tunnel_sock, @tunnel_interface)
+      tunnel_sock.bind(Socket.sockaddr_in(nil, @src_addr))
 
       outside_sock_object_id = outside_sock.object_id
       tunnel_sock_object_id = tunnel_sock.object_id
+      @src_mac_cache = "" # String(binary)
+      @src_ip_addr_cache = "" # String(binary)
       while true
         ret = IO::select([outside_sock, tunnel_sock])
-        puts "受信"
         ret[0].each do |sock|
           payload = sock.recv(65535)
           if sock.object_id === outside_sock_object_id
-            # Etherヘッダを付ける
-            puts "外から受信"
-            pp payload # Payload は Etherヘッダから付いてくる
-            pp payload.size # 42, IP:20Byte, ICMP: 8Byte, Etherヘッダ 14Byte
-            ip_header = IPHeader.new(bin_data: payload.byteslice(14, 20))
-            dst_addr = ip_header.dst_addr # ★IPAddr
-            arp_entry = RbEtherIP::ArpTable.search_arp_entry(dst_addr)
-            if arp_entry.nil?
-              # EtherIP越しにARPする
-              # payload: ARP + Etherヘッダ
-              arp_client = RbEtherIP::ArpClient.new(src_if_name: "eth2", dst_ip_addr: dst_addr.to_s)
-              arp_data = arp_client.data_to_send
-              tunnel_sock.bind(Socket.sockaddr_in(nil, @src_addr))
-              tunnel_sock.send( EtherIPHeader.new.to_pack + arp_data, 0, Socket.sockaddr_in(nil, @peer_addr)) # 送るまでは出来る
-              mesg, _ = tunnel_sock.recvfrom(1500) # 第3引数がある→ARPしか受信しない？、ない→全部受信する？
-              dst_mac_addr = RbEtherIP::RecvMessage.new(mesg).sender_mac_address
-
-              pp dst_mac_addr
-              exit
+            puts "from outside"
+            recv_ether_frame = EtherFrame.new(payload)
+            if @remote_ip_addrs.nil?
+              if recv_ether_frame.arp?
+                recv_ether_frame.rewrite_src_mac_addr(@src_mac_cache)
+              else
+                recv_ether_frame.rewrite_dst_mac_addr(@src_mac_cache)
+                recv_ether_frame.rewrite_dst_ip_addr(@src_ip_addr_cache)
+              end
+            else
+              dst_ip_addr = recv_ether_frame.to_ip_header.dst_addr
+              dst_mac_addr = resolve_arp_via_tunnel(tunnel_sock, dst_ip_addr.to_s)
+              recv_ether_frame.rewrite_dst_mac_addr(dst_mac_addr)
             end
-
-            payload = replace_dst_mac_addr(payload, dst_mac_addr)
-
-            data = EtherIPHeader.new.to_pack
-            tunnel_sock.bind(Socket.sockaddr_in(nil, @src_addr))
-            tunnel_sock.send(data + payload, 0, Socket.sockaddr_in(nil, @peer_addr))
-            exit
+            tunnel_sock.send(EtherIPHeader.new.to_pack + recv_ether_frame.to_bin, 0, Socket.sockaddr_in(nil, @peer_addr))
           else
-            # Etherヘッダ(36Byte)を外す
-            puts "トンネルから受信"
-            pp payload.bytesize # => 82Byte -> IPヘッダより上を受信してる。Ehterヘッダは含まれていない。
-            payload_excluded_etherip = payload.byteslice(22, payload.bytesize - 22)
-            outside_sock.send(payload_excluded_etherip, 0)
+            puts "from tunnel"
+            recv_ether_frame = EtherFrame.new(IPPacket.new(payload).to_excluded_etherip)
+            if @remote_ip_addrs.nil?
+              if recv_ether_frame.arp?
+                if_src_mac_addr = if_name_to_mac_adress(@outside_interface)
+                @src_mac_cache = recv_ether_frame.src_mac_addr_bin
+                recv_ether_frame.rewrite_src_mac_addr_in_arp(if_src_mac_addr)
+              else
+                @src_mac_cache = recv_ether_frame.src_mac_addr_bin
+                @src_ip_addr_cache = recv_ether_frame.src_ip_addr_bin
+
+                if_src_mac_addr = if_name_to_mac_adress(@outside_interface)
+                recv_ether_frame.rewrite_src_mac_addr(if_src_mac_addr)
+
+                ip_addr_bin = if_name_to_ip_addr(@outside_interface)
+                recv_ether_frame.rewrite_src_ip_addr(ip_addr_bin)
+                recv_ether_frame.recalculate_ip_checksum!
+              end
+            else
+              if_src_mac_addr = if_name_to_mac_adress(@outside_interface)
+              recv_ether_frame.rewrite_src_mac_addr(if_src_mac_addr)
+
+              recv_ether_frame.recalculate_ip_checksum!
+            end
+            outside_sock.send(recv_ether_frame.to_bin, 0)
           end
         end
       end
@@ -94,8 +90,16 @@ module RbEtherIP
 
     private
 
-    # RAWソケット用のbind
-    #  というよりは AF_PACKET(L2)のbindかな。
+    # @return [Array<String(Binary)>]
+    def resolve_arp_via_tunnel(tunnel_sock, dst_ip_addr)
+      arp_client = RbEtherIP::ArpClient.new(src_if_name: "eth2", dst_ip_addr: dst_ip_addr.to_s)
+      arp_data = arp_client.data_to_send
+      tunnel_sock.bind(Socket.sockaddr_in(nil, @src_addr))
+      tunnel_sock.send(EtherIPHeader.new.to_pack + arp_data, 0, Socket.sockaddr_in(nil, @peer_addr))
+      mesg, _ = tunnel_sock.recvfrom(1500)
+      mesg[44, 6]
+    end
+
     def bind_if(socket, interface)
       ifreq = [ interface, '' ].pack('a16a16')
 
