@@ -37,7 +37,7 @@ HowToUse
 ```ruby
 $ git clone git@github.com:kuredev/vpc_conn.git
   # Commands on the router of the VPC of the host for sending
-$ sudo ruby rb_etherip.rb -o eth1 -t eth2 -d [Peer Router IP Address] -s [IP address to communicate with peer VPC host] -r [Same IP address as the receiving host]
+$ sudo ruby vpc_conn.rb -o eth1 -t eth2 -d [Peer Router IP Address] -s [IP address to communicate with peer VPC host] -r [Same IP address as the receiving host]
   # Commands on the router of the VPC of the host for receiving
-$ sudo ruby rb_etherip.rb -o eth1 -t eth2 -d [Peer Router IP Address] -s [IP address to communicate with peer VPC host]
+$ sudo ruby vpc_conn.rb -o eth1 -t eth2 -d [Peer Router IP Address] -s [IP address to communicate with peer VPC host]
 ```
